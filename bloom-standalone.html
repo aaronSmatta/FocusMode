@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom — Focus &amp; Grow</title>
+<style>
+  :root{
+    --cream:#fdf6ec; --cream2:#fbeede; --ink:#5b4a42; --ink-soft:#8a7a70;
+    --leaf:#7fc8a0; --leaf-d:#5fae84; --peach:#ffb59e; --rose:#f7a8c4;
+    --lav:#c5b3f0; --sky:#9ad0f5; --butter:#ffe08a; --coral:#ff9a8b;
+    --card:#fffdf9; --line:#efe2d2; --shadow:0 10px 30px rgba(150,120,90,.12);
+    --gold:#f2b441; --good:#7fc8a0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Nunito','Segoe UI',system-ui,sans-serif;
+    background:linear-gradient(160deg,#fdf6ec 0%,#fbeede 50%,#f6ead9 100%);
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:920px;margin:0 auto;padding:18px 18px 120px}
+  /* Header */
+  header.topbar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-radius:22px;
+    padding:14px 18px;box-shadow:var(--shadow);position:sticky;top:12px;z-index:30;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+  .brand .logo{width:34px;height:34px}
+  .lvlchip{background:linear-gradient(135deg,var(--leaf),var(--leaf-d));color:#fff;
+    font-weight:800;border-radius:14px;padding:6px 12px;font-size:14px;white-space:nowrap}
+  .xpwrap{flex:1;min-width:160px}
+  .xpbar{height:14px;background:#f0e6d8;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .xpfill{height:100%;background:linear-gradient(90deg,var(--butter),var(--gold));border-radius:10px;transition:width .6s cubic-bezier(.2,.8,.2,1);width:0}
+  .xptext{font-size:11px;color:var(--ink-soft);margin-top:3px;font-weight:700}
+  .coins{display:flex;align-items:center;gap:6px;background:#fff6e0;border:1px solid #f3e2b8;
+    border-radius:14px;padding:6px 12px;font-weight:800;color:#b07d18;white-space:nowrap}
+  .coins .c{width:18px;height:18px}
+  /* Nav */
+  nav.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap;justify-content:center}
+  nav.tabs button{
+    border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
+    border-radius:16px;padding:10px 16px;font-weight:800;font-size:14px;cursor:pointer;
+    display:flex;align-items:center;gap:7px;transition:.2s;font-family:inherit
+  }
+  nav.tabs button:hover{transform:translateY(-1px)}
+  nav.tabs button.active{background:linear-gradient(135deg,var(--leaf),var(--leaf-d));color:#fff;border-color:transparent;box-shadow:var(--shadow)}
+  .tabico{font-size:16px}
+  /* Cards / views */
+  .view{display:none;animation:fade .4s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:var(--shadow);margin-bottom:16px}
+  h2.sec{font-size:22px;margin-bottom:4px}
+  p.sub{color:var(--ink-soft);font-weight:600;margin-bottom:16px;font-size:14px}
+  /* Focus */
+  .technique-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .tech{flex:1;min-width:120px;border:2px solid var(--line);border-radius:18px;padding:14px;cursor:pointer;background:#fff;transition:.2s;text-align:center}
+  .tech:hover{transform:translateY(-2px)}
+  .tech.sel{border-color:var(--leaf);background:#f1faf4;box-shadow:0 6px 18px rgba(127,200,160,.25)}
+  .tech .tname{font-weight:800;font-size:15px}
+  .tech .tdesc{font-size:12px;color:var(--ink-soft);margin-top:4px;font-weight:600}
+  .timer-stage{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0}
+  .ring-wrap{position:relative;width:260px;height:260px}
+  .ring-wrap svg{transform:rotate(-90deg)}
+  .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .time-num{font-size:52px;font-weight:800;letter-spacing:1px}
+  .phase-label{font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:2px;font-size:13px}
+  .cyclepips{display:flex;gap:6px;margin-top:4px}
+  .pip{width:10px;height:10px;border-radius:50%;background:#e7dccd}
+  .pip.done{background:var(--leaf)}
+  .controls{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+  .btn{border:none;border-radius:16px;padding:13px 26px;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.primary{background:linear-gradient(135deg,var(--leaf),var(--leaf-d));color:#fff;box-shadow:var(--shadow)}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn.warn{background:#fff0ec;color:#d2674e;border:1px solid #f6d3c8}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .reward-line{font-weight:700;color:var(--ink-soft);font-size:13px;text-align:center}
+  /* Focus lock overlay */
+  .lock{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    background:radial-gradient(circle at 50% 30%,#3a5a4a,#243a30 80%);color:#eafff2}
+  .lock.on{display:flex}
+  .breath{width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,#9be3bf,#5fae84);
+    animation:breathe 8s ease-in-out infinite;box-shadow:0 0 60px rgba(155,227,191,.5)}
+  @keyframes breathe{0%,100%{transform:scale(.78)}50%{transform:scale(1.05)}}
+  .lock .lt{font-size:64px;font-weight:800}
+  .lock .lp{letter-spacing:3px;text-transform:uppercase;font-weight:800;opacity:.8;font-size:14px}
+  .lock .hint{opacity:.65;font-size:13px;max-width:320px;text-align:center;line-height:1.5}
+  .lock .lockbtns{display:flex;gap:10px}
+  .lock .lbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:14px;padding:11px 22px;font-weight:800;cursor:pointer;font-family:inherit}
+  .distract-toast{position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:210;
+    background:#fff;color:#d2674e;border:1px solid #f6d3c8;padding:12px 20px;border-radius:16px;font-weight:800;box-shadow:var(--shadow);display:none}
+  /* Avatar */
+  .avatar-stage{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .avatar-frame{flex:1;min-width:240px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .avatar-box{width:260px;height:260px;border-radius:26px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+  .cust{flex:1;min-width:240px}
+  .cust h3{font-size:15px;margin:14px 0 8px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px}
+  .opt-grid{display:flex;gap:8px;flex-wrap:wrap}
+  .opt{width:58px;height:58px;border-radius:14px;border:2px solid var(--line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;position:relative;transition:.15s;overflow:hidden}
+  .opt:hover{transform:translateY(-2px)}
+  .opt.eq{border-color:var(--leaf);box-shadow:0 4px 12px rgba(127,200,160,.3)}
+  .opt.locked{opacity:.45;cursor:not-allowed}
+  .opt .lk{position:absolute;bottom:2px;right:3px;font-size:11px}
+  .opt.none{font-size:11px;font-weight:800;color:var(--ink-soft)}
+  /* Shop */
+  .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .shop-item{border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center;background:#fff;transition:.2s;position:relative}
+  .shop-item:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .shop-prev{width:72px;height:72px;margin:0 auto 8px;border-radius:14px;overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--cream)}
+  .shop-item .iname{font-weight:800;font-size:14px}
+  .shop-item .icat{font-size:11px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .price{display:inline-flex;align-items:center;gap:5px;font-weight:800;color:#b07d18;margin-top:8px}
+  .buybtn{margin-top:8px;width:100%;border:none;border-radius:12px;padding:9px;font-weight:800;cursor:pointer;font-family:inherit;font-size:13px}
+  .buybtn.buy{background:linear-gradient(135deg,var(--leaf),var(--leaf-d));color:#fff}
+  .buybtn.owned{background:#eef7f0;color:var(--leaf-d)}
+  .buybtn.lockedb{background:#f3ece2;color:var(--ink-soft);cursor:not-allowed}
+  .lockbadge{position:absolute;top:8px;right:8px;background:#f3ece2;color:var(--ink-soft);font-size:11px;font-weight:800;padding:3px 8px;border-radius:10px}
+  /* Community */
+  .lb-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;margin-bottom:8px;border:1px solid var(--line);background:#fff}
+  .lb-row.me{background:#f1faf4;border-color:var(--leaf)}
+  .rank{font-weight:800;width:30px;text-align:center;color:var(--ink-soft)}
+  .rank.top{color:var(--gold)}
+  .lb-av{width:48px;height:48px;border-radius:12px;overflow:hidden;border:1px solid var(--line);flex-shrink:0}
+  .lb-name{font-weight:800;flex:1}
+  .lb-name small{display:block;color:var(--ink-soft);font-weight:700;font-size:12px}
+  .lb-mins{font-weight:800;color:var(--leaf-d);text-align:right}
+  .lb-mins small{display:block;color:var(--ink-soft);font-weight:700;font-size:11px}
+  /* Stats */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
+  .stat .v{font-size:28px;font-weight:800}
+  .stat .l{font-size:12px;color:var(--ink-soft);font-weight:700;margin-top:2px}
+  .chart{display:flex;align-items:flex-end;gap:10px;height:140px;padding:10px 4px 0}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .bar .fill{width:100%;max-width:34px;background:linear-gradient(180deg,var(--leaf),var(--leaf-d));border-radius:8px 8px 4px 4px;transition:height .5s;min-height:3px}
+  .bar .day{font-size:11px;color:var(--ink-soft);font-weight:700}
+  /* Music dock */
+  .musicdock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:40;
+    background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+    padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:94%}
+  .musicdock select{border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-weight:800;font-family:inherit;color:var(--ink);background:#fff;font-size:13px}
+  .mplay{width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--leaf),var(--leaf-d));color:#fff;font-size:18px;cursor:pointer;flex-shrink:0}
+  .musicdock input[type=range]{width:90px;accent-color:var(--leaf)}
+  .mlabel{font-weight:800;font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  /* Level up modal */
+  .modal{position:fixed;inset:0;z-index:300;background:rgba(60,45,35,.45);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.on{display:flex}
+  .modal-card{background:var(--card);border-radius:24px;padding:30px;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .4s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-card h2{font-size:26px;margin:10px 0}
+  .confetti{font-size:46px}
+  .unlock-list{text-align:left;margin:14px 0;font-weight:700;font-size:14px}
+  .unlock-list li{margin:4px 0;list-style:none}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:14px;font-weight:800;z-index:250;opacity:0;transition:.3s;pointer-events:none;font-size:14px}
+  .toast.on{opacity:1}
+  .reset{background:none;border:none;color:var(--ink-soft);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px}
+  @media(max-width:560px){.time-num{font-size:42px}.ring-wrap{width:220px;height:220px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40"><circle cx="20" cy="24" r="13" fill="#7fc8a0"/><path d="M20 14 C20 6 14 4 12 6 C14 9 16 11 20 13 Z" fill="#5fae84"/><path d="M20 14 C20 6 26 4 28 6 C26 9 24 11 20 13 Z" fill="#7fc8a0"/><circle cx="16" cy="24" r="2" fill="#3a4d40"/><circle cx="24" cy="24" r="2" fill="#3a4d40"/></svg>
+      Bloom
+    </div>
+    <div class="lvlchip" id="lvlchip">Lv 1</div>
+    <div class="xpwrap">
+      <div class="xpbar"><div class="xpfill" id="xpfill"></div></div>
+      <div class="xptext" id="xptext">0 / 100 XP</div>
+    </div>
+    <div class="coins"><svg class="c" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#f2b441"/><circle cx="10" cy="10" r="6" fill="#ffd571"/><text x="10" y="14" font-size="9" text-anchor="middle" fill="#b07d18" font-weight="bold">$</text></svg><span id="coincount">0</span></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="focus" class="active"><span class="tabico">🎯</span>Focus</button>
+    <button data-tab="avatar"><span class="tabico">🌱</span>Avatar</button>
+    <button data-tab="shop"><span class="tabico">🛍️</span>Shop</button>
+    <button data-tab="community"><span class="tabico">🌍</span>Community</button>
+    <button data-tab="stats"><span class="tabico">📊</span>Stats</button>
+  </nav>
+
+  <!-- FOCUS -->
+  <section class="view active" id="view-focus">
+    <div class="card">
+      <h2 class="sec">Start a focus session</h2>
+      <p class="sub">Pick a technique. Earn XP &amp; coins for every minute you stay focused.</p>
+      <div class="technique-row" id="techRow"></div>
+      <div class="timer-stage">
+        <div class="ring-wrap">
+          <svg width="260" height="260">
+            <circle cx="130" cy="130" r="116" fill="none" stroke="#f0e6d8" stroke-width="16"/>
+            <circle id="ring" cx="130" cy="130" r="116" fill="none" stroke="#7fc8a0" stroke-width="16" stroke-linecap="round" stroke-dasharray="729" stroke-dashoffset="0"/>
+          </svg>
+          <div class="ring-center">
+            <div class="phase-label" id="phaseLabel">Focus</div>
+            <div class="time-num" id="timeNum">25:00</div>
+            <div class="cyclepips" id="pips"></div>
+          </div>
+        </div>
+        <div class="reward-line" id="rewardLine">Complete this session to earn rewards</div>
+        <div class="controls">
+          <button class="btn primary" id="startBtn">▶ Start</button>
+          <button class="btn ghost" id="pauseBtn" disabled>⏸ Pause</button>
+          <button class="btn warn" id="stopBtn" disabled>✕ End</button>
+        </div>
+        <label style="font-weight:700;color:var(--ink-soft);font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer">
+          <input type="checkbox" id="lockToggle" checked style="width:16px;height:16px;accent-color:#7fc8a0"> Use full-screen Focus Lock (warns if you leave the page)
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVATAR -->
+  <section class="view" id="view-avatar">
+    <div class="card">
+      <h2 class="sec">Your avatar</h2>
+      <p class="sub">Equip the items you own. Unlock more by leveling up and shopping.</p>
+      <div class="avatar-stage">
+        <div class="avatar-frame">
+          <div class="avatar-box" id="bigAvatar"></div>
+          <div style="font-weight:800;color:var(--ink-soft)">Little Sprout</div>
+        </div>
+        <div class="cust" id="custPanel"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOP -->
+  <section class="view" id="view-shop">
+    <div class="card">
+      <h2 class="sec">Shop</h2>
+      <p class="sub">Spend coins on cosmetics. New items unlock as you level up. <span id="shopCoins" style="color:#b07d18;font-weight:800"></span></p>
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
+  </section>
+
+  <!-- COMMUNITY -->
+  <section class="view" id="view-community">
+    <div class="card">
+      <h2 class="sec">Community board</h2>
+      <p class="sub">This week's focus leaderboard. Keep going to climb the ranks! 🌿</p>
+      <div id="leaderboard"></div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="view" id="view-stats">
+    <div class="card">
+      <h2 class="sec">Your progress</h2>
+      <p class="sub">Every focused minute grows your sprout.</p>
+      <div class="stat-grid" id="statGrid"></div>
+      <h3 style="font-size:15px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Last 7 days (minutes)</h3>
+      <div class="chart" id="chart"></div>
+      <div style="text-align:center;margin-top:18px"><button class="reset" id="resetBtn">Reset all progress</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- Focus Lock overlay -->
+<div class="lock" id="lock">
+  <div class="lp" id="lockPhase">Focus</div>
+  <div class="breath"></div>
+  <div class="lt" id="lockTime">25:00</div>
+  <div class="hint">Stay on this page. Leaving or switching tabs counts as a distraction. Breathe with the circle.</div>
+  <div class="lockbtns">
+    <button class="lbtn" id="lockPause">Pause</button>
+    <button class="lbtn" id="lockEnd">End session</button>
+  </div>
+  <div style="opacity:.5;font-size:12px" id="lockDistract"></div>
+</div>
+<div class="distract-toast" id="distractToast">⚠ Focus broken — come back to your session</div>
+
+<!-- Music dock -->
+<div class="musicdock">
+  <button class="mplay" id="mplay">▶</button>
+  <span class="mlabel">Soundscape</span>
+  <select id="trackSel">
+    <option value="rain">🌧 Rain</option>
+    <option value="forest">🌲 Forest</option>
+    <option value="lofi">🎹 Lo-fi Pad</option>
+    <option value="drone">🌌 Deep Drone</option>
+    <option value="waves">🌊 Ocean</option>
+  </select>
+  <input type="range" id="vol" min="0" max="100" value="45">
+</div>
+
+<!-- Level up modal -->
+<div class="modal" id="levelModal">
+  <div class="modal-card">
+    <div class="confetti">🎉</div>
+    <h2 id="modalTitle">Level Up!</h2>
+    <p style="color:var(--ink-soft);font-weight:700" id="modalSub"></p>
+    <ul class="unlock-list" id="unlockList"></ul>
+    <button class="btn primary" id="modalClose" style="width:100%;justify-content:center;margin-top:8px">Keep blooming</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============ ITEM CATALOG ============ */
+const COLORS = {
+  mint:{name:"Mint",fill:"#8fd9b6",cheek:"#5fae84"},
+  peach:{name:"Peach",fill:"#ffb59e",cheek:"#e8826a"},
+  lav:{name:"Lavender",fill:"#c5b3f0",cheek:"#9d83e0"},
+  sky:{name:"Sky",fill:"#9ad0f5",cheek:"#5fa8e0"},
+  coral:{name:"Coral",fill:"#ff9a8b",cheek:"#e8675a"},
+  butter:{name:"Butter",fill:"#ffe08a",cheek:"#e0b94a"},
+  rose:{name:"Rosie",fill:"#f7a8c4",cheek:"#e07aa0"},
+  galaxy:{name:"Galaxy",fill:"url(#galGrad)",cheek:"#6a4fb0",grad:["#7b5cd6","#3a2a6b"]}
+};
+const BGS = {
+  cream:{name:"Cream",val:"#fdf6ec"},
+  meadow:{name:"Meadow",val:"linear-gradient(160deg,#d4f0c0,#a9dd8f)"},
+  beach:{name:"Beach",val:"linear-gradient(160deg,#cdeefd,#ffe9b8)"},
+  night:{name:"Night Sky",val:"linear-gradient(160deg,#3a3f6b,#1f2347)",stars:true},
+  aurora:{name:"Aurora",val:"linear-gradient(160deg,#243a4a,#3fb6a0 60%,#8b6bd6)",stars:true},
+  sunset:{name:"Sunset",val:"linear-gradient(160deg,#ffd194,#ff9a8b 60%,#a86bd6)"}
+};
+// categories: color, bg, hat, glasses, pet
+const ITEMS = [
+  // colors
+  {id:"mint",cat:"color",name:"Mint",cost:0,level:1,emoji:"🟢"},
+  {id:"peach",cat:"color",name:"Peach",cost:30,level:1,emoji:"🟠"},
+  {id:"lav",cat:"color",name:"Lavender",cost:60,level:2,emoji:"🟣"},
+  {id:"sky",cat:"color",name:"Sky",cost:100,level:3,emoji:"🔵"},
+  {id:"coral",cat:"color",name:"Coral",cost:140,level:4,emoji:"🔴"},
+  {id:"butter",cat:"color",name:"Butter",cost:180,level:5,emoji:"🟡"},
+  {id:"rose",cat:"color",name:"Rosie",cost:240,level:6,emoji:"🌸"},
+  {id:"galaxy",cat:"color",name:"Galaxy",cost:600,level:9,emoji:"🌌"},
+  // backgrounds
+  {id:"cream",cat:"bg",name:"Cream",cost:0,level:1,emoji:"🟤"},
+  {id:"meadow",cat:"bg",name:"Meadow",cost:70,level:2,emoji:"🌳"},
+  {id:"beach",cat:"bg",name:"Beach",cost:150,level:4,emoji:"🏖️"},
+  {id:"sunset",cat:"bg",name:"Sunset",cost:220,level:5,emoji:"🌅"},
+  {id:"night",cat:"bg",name:"Night Sky",cost:300,level:6,emoji:"🌙"},
+  {id:"aurora",cat:"bg",name:"Aurora",cost:650,level:9,emoji:"✨"},
+  // hats
+  {id:"beanie",cat:"hat",name:"Beanie",cost:50,level:1,emoji:"🧢"},
+  {id:"flower",cat:"hat",name:"Flower Crown",cost:90,level:2,emoji:"🌼"},
+  {id:"party",cat:"hat",name:"Party Hat",cost:120,level:3,emoji:"🎉"},
+  {id:"crown",cat:"hat",name:"Gold Crown",cost:350,level:5,emoji:"👑"},
+  {id:"wizard",cat:"hat",name:"Wizard Hat",cost:450,level:7,emoji:"🧙"},
+  {id:"halo",cat:"hat",name:"Halo",cost:800,level:10,emoji:"😇"},
+  // glasses
+  {id:"round",cat:"glasses",name:"Round Specs",cost:40,level:1,emoji:"👓"},
+  {id:"sun",cat:"glasses",name:"Sunnies",cost:110,level:3,emoji:"🕶️"},
+  {id:"star",cat:"glasses",name:"Star Shades",cost:260,level:6,emoji:"⭐"},
+  {id:"heart",cat:"glasses",name:"Heart Frames",cost:300,level:7,emoji:"💖"},
+  // pets
+  {id:"bunny",cat:"pet",name:"Bunny",cost:160,level:3,emoji:"🐰"},
+  {id:"cat",cat:"pet",name:"Cat",cost:220,level:4,emoji:"🐱"},
+  {id:"bird",cat:"pet",name:"Birdie",cost:280,level:5,emoji:"🐦"},
+  {id:"dragon",cat:"pet",name:"Baby Dragon",cost:1000,level:10,emoji:"🐲"}
+];
+const CAT_LABEL = {color:"Body color",bg:"Background",hat:"Hat",glasses:"Glasses",pet:"Companion"};
+
+/* ============ FOCUS TECHNIQUES ============ */
+// phases: {type:'focus'|'short'|'long', min}
+const TECHNIQUES = {
+  pomodoro:{name:"Pomodoro",desc:"25 min focus · 5 min break ×4",focus:25,short:5,long:15,cycles:4},
+  fiftytwo:{name:"52 / 17",desc:"52 min deep · 17 min rest",focus:52,short:17,long:17,cycles:2},
+  deep:{name:"Deep Work",desc:"50 min flow · 10 min break ×2",focus:50,short:10,long:15,cycles:2},
+  sprint:{name:"Quick Sprint",desc:"15 min focus · 3 min break",focus:15,short:3,long:5,cycles:3},
+  custom:{name:"Custom",desc:"Set your own focus length",focus:30,short:5,long:10,cycles:1,custom:true}
+};
+
+/* ============ STATE ============ */
+const DEFAULT_STATE = {
+  level:1, xp:0, coins:50,
+  owned:["mint","cream"],
+  equip:{color:"mint",bg:"cream",hat:null,glasses:null,pet:null},
+  totalMinutes:0, sessions:0, streak:0, lastFocusDay:null,
+  history:{}, // 'YYYY-MM-DD': minutes
+  technique:"pomodoro", customFocus:30,
+  music:{track:"rain", vol:45}
+};
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem("bloom_state");
+    if(raw){ return Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), JSON.parse(raw)); }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+function save(){ try{ localStorage.setItem("bloom_state", JSON.stringify(S)); }catch(e){} }
+
+/* ============ LEVELING ============ */
+function xpForLevel(lv){ return 100 + (lv-1)*60; } // xp needed to go from lv -> lv+1
+function addXP(amount){
+  S.xp += amount;
+  let leveled = [];
+  while(S.xp >= xpForLevel(S.level)){
+    S.xp -= xpForLevel(S.level);
+    S.level++;
+    leveled.push(S.level);
+  }
+  if(leveled.length){ onLevelUp(leveled); }
+}
+function onLevelUp(levels){
+  const top = levels[levels.length-1];
+  // reward coins per level
+  let bonus = 0;
+  levels.forEach(l=> bonus += 40 + l*10);
+  S.coins += bonus;
+  // unlocked items
+  let unlocked = ITEMS.filter(it=> levels.includes(it.level));
+  document.getElementById("modalTitle").textContent = levels.length>1 ? `Level ${top}!` : `Level ${top}!`;
+  document.getElementById("modalSub").textContent = `+${bonus} coins reward 🪙`;
+  const ul = document.getElementById("unlockList");
+  if(unlocked.length){
+    ul.innerHTML = "<li style='color:var(--ink-soft);margin-bottom:4px'>🔓 New items unlocked in the Shop:</li>" +
+      unlocked.map(it=>`<li>${it.emoji} ${it.name} <span style="color:var(--ink-soft)">(${CAT_LABEL[it.cat]})</span></li>`).join("");
+  } else {
+    ul.innerHTML = "<li style='color:var(--ink-soft)'>Keep focusing to unlock more cosmetics!</li>";
+  }
+  document.getElementById("levelModal").classList.add("on");
+}
+
+/* ============ AVATAR RENDER ============ */
+function renderAvatar(cfg, opts){
+  opts = opts || {};
+  const id = "av"+Math.random().toString(36).slice(2,7);
+  const col = COLORS[cfg.color] || COLORS.mint;
+  const bg = BGS[cfg.bg] || BGS.cream;
+  let bgStyle = bg.val;
+  let defs = "";
+  if(col.grad){ defs += `<linearGradient id="galGrad_${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col.grad[0]}"/><stop offset="1" stop-color="${col.grad[1]}"/></linearGradient>`; }
+  let bodyFill = col.grad ? `url(#galGrad_${id})` : col.fill;
+  // stars for night/aurora
+  let stars = "";
+  if(bg.stars){
+    for(let i=0;i<14;i++){ const x=15+Math.random()*170, y=10+Math.random()*90, r=Math.random()*1.6+0.6;
+      stars += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="#fff" opacity="${(0.4+Math.random()*0.5).toFixed(2)}"/>`; }
+  }
+  // hat
+  let hat = "";
+  switch(cfg.hat){
+    case "beanie": hat=`<path d="M64 70 Q100 30 136 70 Z" fill="#e8826a"/><rect x="60" y="68" width="80" height="12" rx="6" fill="#d2674e"/><circle cx="100" cy="34" r="7" fill="#fff"/>`; break;
+    case "flower": hat=`<g>${[70,85,100,115,130].map((x,i)=>`<circle cx="${x}" cy="${64-(i===2?6:0)}" r="9" fill="${['#f7a8c4','#ffd571','#9ad0f5','#c5b3f0','#ff9a8b'][i]}"/><circle cx="${x}" cy="${64-(i===2?6:0)}" r="3.5" fill="#fff"/>`).join("")}</g>`; break;
+    case "party": hat=`<path d="M100 18 L84 70 L116 70 Z" fill="#ff9a8b"/><path d="M100 18 L84 70 L116 70 Z" fill="url(#pp_${id})" opacity=".5"/><circle cx="100" cy="16" r="6" fill="#ffd571"/><defs><pattern id="pp_${id}" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="2" fill="#fff"/></pattern></defs>`; break;
+    case "crown": hat=`<path d="M68 66 L72 40 L88 58 L100 34 L112 58 L128 40 L132 66 Z" fill="#f2b441" stroke="#d99a1f" stroke-width="2"/><circle cx="100" cy="44" r="4" fill="#ff6b8b"/><circle cx="80" cy="54" r="3" fill="#6bc6ff"/><circle cx="120" cy="54" r="3" fill="#6bc6ff"/>`; break;
+    case "wizard": hat=`<path d="M100 12 L70 72 L130 72 Z" fill="#6a4fb0"/><rect x="64" y="68" width="72" height="10" rx="5" fill="#5a3f9c"/><circle cx="100" cy="40" r="3" fill="#ffd571"/><circle cx="92" cy="56" r="2.5" fill="#ffd571"/><circle cx="110" cy="50" r="2.5" fill="#ffd571"/><path d="M100 12 l3 6 l-6 0 z" fill="#ffd571"/>`; break;
+    case "halo": hat=`<ellipse cx="100" cy="46" rx="34" ry="9" fill="none" stroke="#ffe08a" stroke-width="6" opacity=".95"/><ellipse cx="100" cy="46" rx="34" ry="9" fill="none" stroke="#fff6cf" stroke-width="2"/>`; break;
+  }
+  // glasses
+  let glasses = "";
+  switch(cfg.glasses){
+    case "round": glasses=`<circle cx="84" cy="118" r="13" fill="none" stroke="#5b4a42" stroke-width="3"/><circle cx="116" cy="118" r="13" fill="none" stroke="#5b4a42" stroke-width="3"/><line x1="97" y1="118" x2="103" y2="118" stroke="#5b4a42" stroke-width="3"/>`; break;
+    case "sun": glasses=`<rect x="70" y="110" width="28" height="16" rx="7" fill="#3a4d40"/><rect x="102" y="110" width="28" height="16" rx="7" fill="#3a4d40"/><line x1="98" y1="115" x2="102" y2="115" stroke="#3a4d40" stroke-width="4"/>`; break;
+    case "star": glasses=`<text x="84" y="126" font-size="22" text-anchor="middle">⭐</text><text x="116" y="126" font-size="22" text-anchor="middle">⭐</text>`; break;
+    case "heart": glasses=`<text x="84" y="126" font-size="20" text-anchor="middle">💖</text><text x="116" y="126" font-size="20" text-anchor="middle">💖</text>`; break;
+  }
+  const showFace = !(cfg.glasses==="sun"||cfg.glasses==="star"||cfg.glasses==="heart");
+  let eyes = showFace ? `<circle cx="84" cy="118" r="5" fill="#3a4d40"/><circle cx="116" cy="118" r="5" fill="#3a4d40"/><circle cx="85.5" cy="116.5" r="1.6" fill="#fff"/><circle cx="117.5" cy="116.5" r="1.6" fill="#fff"/>` : "";
+  // pet
+  let pet = "";
+  const petMap = {bunny:"🐰",cat:"🐱",bird:"🐦",dragon:"🐲"};
+  if(cfg.pet && petMap[cfg.pet]){ pet = `<text x="158" y="178" font-size="34" text-anchor="middle">${petMap[cfg.pet]}</text>`; }
+
+  const svg = `<svg viewBox="0 0 200 200" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+    <defs>${defs}</defs>
+    ${stars}
+    <ellipse cx="100" cy="176" rx="46" ry="9" fill="rgba(0,0,0,.08)"/>
+    <ellipse cx="78" cy="170" rx="11" ry="7" fill="${bodyFill}"/>
+    <ellipse cx="122" cy="170" rx="11" ry="7" fill="${bodyFill}"/>
+    <line x1="100" y1="80" x2="100" y2="62" stroke="#5fae84" stroke-width="4" stroke-linecap="round"/>
+    <path d="M100 66 C100 54 90 50 86 53 C89 60 94 64 100 66 Z" fill="#7fc8a0"/>
+    <path d="M100 66 C100 54 110 50 114 53 C111 60 106 64 100 66 Z" fill="#9be3bf"/>
+    <ellipse cx="100" cy="124" rx="56" ry="52" fill="${bodyFill}"/>
+    <circle cx="74" cy="134" r="6.5" fill="${col.cheek}" opacity=".55"/>
+    <circle cx="126" cy="134" r="6.5" fill="${col.cheek}" opacity=".55"/>
+    ${eyes}
+    <path d="M92 134 Q100 142 108 134" stroke="#3a4d40" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${glasses}
+    ${hat}
+    ${pet}
+  </svg>`;
+  return `<div style="width:100%;height:100%;background:${bgStyle}">${svg}</div>`;
+}
+
+/* ============ NAV ============ */
+document.querySelectorAll("nav.tabs button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    document.getElementById("view-"+btn.dataset.tab).classList.add("active");
+    if(btn.dataset.tab==="avatar") renderCustomize();
+    if(btn.dataset.tab==="shop") renderShop();
+    if(btn.dataset.tab==="community") renderCommunity();
+    if(btn.dataset.tab==="stats") renderStats();
+  });
+});
+
+/* ============ HEADER / HUD ============ */
+function renderHUD(){
+  document.getElementById("lvlchip").textContent = "Lv "+S.level;
+  const need = xpForLevel(S.level);
+  document.getElementById("xpfill").style.width = Math.min(100,(S.xp/need*100))+"%";
+  document.getElementById("xptext").textContent = `${S.xp} / ${need} XP`;
+  document.getElementById("coincount").textContent = S.coins;
+  document.getElementById("bigAvatar") && (document.getElementById("bigAvatar").innerHTML = renderAvatar(S.equip));
+}
+
+/* ============ TECHNIQUE PICKER ============ */
+function renderTechniques(){
+  const row = document.getElementById("techRow");
+  row.innerHTML = Object.entries(TECHNIQUES).map(([k,t])=>`
+    <div class="tech ${S.technique===k?'sel':''}" data-tech="${k}">
+      <div class="tname">${t.name}</div>
+      <div class="tdesc">${t.custom?('focus '+S.customFocus+' min'):t.desc}</div>
+    </div>`).join("");
+  row.querySelectorAll(".tech").forEach(el=>{
+    el.addEventListener("click",()=>{
+      if(timer.running) return;
+      S.technique = el.dataset.tech;
+      if(S.technique==="custom"){
+        const v = parseInt(prompt("Focus length in minutes (5–120):", S.customFocus));
+        if(v && v>=5 && v<=120){ S.customFocus = v; }
+      }
+      save(); renderTechniques(); resetTimerDisplay();
+    });
+  });
+}
+
+/* ============ TIMER ============ */
+const ring = document.getElementById("ring");
+const RING_LEN = 2*Math.PI*116; // ~729
+ring.setAttribute("stroke-dasharray", RING_LEN);
+let timer = { running:false, paused:false, phase:"focus", cycle:0, remaining:0, phaseTotal:0, interval:null, focusedSeconds:0, distractions:0 };
+
+function buildPhasePlan(){
+  const t = TECHNIQUES[S.technique];
+  const focusMin = t.custom ? S.customFocus : t.focus;
+  const plan = [];
+  for(let c=0;c<t.cycles;c++){
+    plan.push({type:"focus",min:focusMin});
+    if(c<t.cycles-1) plan.push({type:"short",min:t.short});
+    else plan.push({type:"long",min:t.long});
+  }
+  return plan;
+}
+let phasePlan = [], phaseIndex = 0;
+
+function fmt(s){ const m=Math.floor(s/60), ss=s%60; return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0"); }
+function phaseName(type){ return type==="focus"?"Focus":(type==="short"?"Short Break":"Long Break"); }
+
+function resetTimerDisplay(){
+  const t = TECHNIQUES[S.technique];
+  const focusMin = t.custom ? S.customFocus : t.focus;
+  document.getElementById("timeNum").textContent = fmt(focusMin*60);
+  document.getElementById("phaseLabel").textContent = "Focus";
+  ring.style.stroke = "#7fc8a0";
+  ring.setAttribute("stroke-dashoffset", 0);
+  // pips
+  const pips = document.getElementById("pips");
+  pips.innerHTML = Array.from({length:t.cycles}).map(()=>`<div class="pip"></div>`).join("");
+  document.getElementById("rewardLine").textContent = `Earn ~${focusMin*3} XP & ~${focusMin*2} coins this session`;
+}
+
+function startTimer(){
+  if(timer.running && timer.paused){ // resume
+    timer.paused=false; tick(); document.getElementById("lock").classList.add(document.getElementById("lockToggle").checked?"on":"x");
+    return;
+  }
+  phasePlan = buildPhasePlan();
+  phaseIndex = 0;
+  timer.running=true; timer.paused=false; timer.focusedSeconds=0; timer.distractions=0; timer.cycle=0;
+  loadPhase();
+  document.getElementById("startBtn").disabled=true;
+  document.getElementById("pauseBtn").disabled=false;
+  document.getElementById("stopBtn").disabled=false;
+  if(document.getElementById("lockToggle").checked) openLock();
+  tick();
+}
+function loadPhase(){
+  const p = phasePlan[phaseIndex];
+  timer.phase = p.type;
+  timer.phaseTotal = p.min*60;
+  timer.remaining = p.min*60;
+  document.getElementById("phaseLabel").textContent = phaseName(p.type);
+  document.getElementById("lockPhase").textContent = phaseName(p.type);
+  ring.style.stroke = p.type==="focus" ? "#7fc8a0" : "#f2b441";
+  updateRing();
+  // pips done = number of completed focus phases
+  const done = phasePlan.slice(0,phaseIndex).filter(x=>x.type==="focus").length;
+  document.querySelectorAll("#pips .pip").forEach((pip,i)=>pip.classList.toggle("done",i<done));
+}
+function updateRing(){
+  const frac = timer.phaseTotal? (timer.remaining/timer.phaseTotal):0;
+  ring.setAttribute("stroke-dashoffset", RING_LEN*(1-frac));
+  document.getElementById("timeNum").textContent = fmt(timer.remaining);
+  document.getElementById("lockTime").textContent = fmt(timer.remaining);
+}
+function tick(){
+  clearInterval(timer.interval);
+  timer.interval = setInterval(()=>{
+    if(timer.paused) return;
+    timer.remaining--;
+    if(timer.phase==="focus") timer.focusedSeconds++;
+    updateRing();
+    if(timer.remaining<=0){ phaseComplete(); }
+  },1000);
+}
+function phaseComplete(){
+  clearInterval(timer.interval);
+  chime(timer.phase==="focus");
+  phaseIndex++;
+  if(phaseIndex>=phasePlan.length){ finishSession(); return; }
+  loadPhase();
+  tick();
+}
+function pauseTimer(){
+  timer.paused = !timer.paused;
+  document.getElementById("pauseBtn").textContent = timer.paused? "▶ Resume":"⏸ Pause";
+  document.getElementById("lockPause").textContent = timer.paused? "Resume":"Pause";
+}
+function stopTimer(end){
+  clearInterval(timer.interval);
+  const wasRunning = timer.running;
+  timer.running=false; timer.paused=false;
+  closeLock();
+  document.getElementById("startBtn").disabled=false;
+  document.getElementById("pauseBtn").disabled=true; document.getElementById("pauseBtn").textContent="⏸ Pause";
+  document.getElementById("stopBtn").disabled=true;
+  // award partial focus for the minutes actually focused
+  if(wasRunning && end){ awardFocus(Math.floor(timer.focusedSeconds/60), false); }
+  resetTimerDisplay();
+}
+function finishSession(){
+  const mins = Math.floor(timer.focusedSeconds/60);
+  timer.running=false;
+  closeLock();
+  document.getElementById("startBtn").disabled=false;
+  document.getElementById("pauseBtn").disabled=true;
+  document.getElementById("stopBtn").disabled=true;
+  awardFocus(mins, true);
+  resetTimerDisplay();
+}
+function awardFocus(mins, completed){
+  if(mins<=0){ toast("Session ended — no focused minutes yet"); return; }
+  const xpGain = mins*3 + (completed?20:0);
+  const coinGain = mins*2 + (completed?15:0);
+  S.totalMinutes += mins;
+  S.sessions += 1;
+  S.coins += coinGain;
+  // streak + history
+  const today = new Date().toISOString().slice(0,10);
+  S.history[today] = (S.history[today]||0) + mins;
+  if(S.lastFocusDay !== today){
+    const y = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    S.streak = (S.lastFocusDay===y)? S.streak+1 : 1;
+    S.lastFocusDay = today;
+  }
+  addXP(xpGain);
+  save(); renderHUD();
+  toast(`🌱 +${xpGain} XP · +${coinGain} 🪙${completed?" · Session complete!":""}`);
+}
+
+document.getElementById("startBtn").onclick = startTimer;
+document.getElementById("pauseBtn").onclick = pauseTimer;
+document.getElementById("stopBtn").onclick = ()=>stopTimer(true);
+document.getElementById("lockPause").onclick = pauseTimer;
+document.getElementById("lockEnd").onclick = ()=>stopTimer(true);
+document.getElementById("lockToggle").onchange = ()=>{};
+
+/* ============ FOCUS LOCK ============ */
+function openLock(){ document.getElementById("lock").classList.add("on"); document.getElementById("lockDistract").textContent=""; }
+function closeLock(){ document.getElementById("lock").classList.remove("on"); }
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden && timer.running && !timer.paused && timer.phase==="focus"){
+    timer.distractions++;
+    document.getElementById("lockDistract").textContent = `Distractions this session: ${timer.distractions}`;
+    showDistractToast();
+  }
+});
+window.addEventListener("blur",()=>{
+  if(timer.running && !timer.paused && timer.phase==="focus"){ /* soft track via visibility primarily */ }
+});
+let dtTimer=null;
+function showDistractToast(){
+  const el=document.getElementById("distractToast");
+  el.style.display="block";
+  clearTimeout(dtTimer);
+  dtTimer=setTimeout(()=>el.style.display="none",3500);
+}
+
+/* ============ CHIME (Web Audio) ============ */
+let actx=null;
+function ensureCtx(){ if(!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); } if(actx.state==="suspended") actx.resume(); return actx; }
+function chime(focusDone){
+  try{
+    const c=ensureCtx();
+    const notes = focusDone ? [523,659,784] : [659,523];
+    notes.forEach((f,i)=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.type="sine"; o.frequency.value=f;
+      o.connect(g); g.connect(c.destination);
+      const t=c.currentTime+i*0.16;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.03); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+      o.start(t); o.stop(t+0.55);
+    });
+  }catch(e){}
+}
+
+/* ============ AMBIENT MUSIC (procedural) ============ */
+const music = { playing:false, nodes:[], master:null, lfoTimers:[] };
+function stopMusic(){
+  music.lfoTimers.forEach(t=>clearInterval(t)); music.lfoTimers=[];
+  music.nodes.forEach(n=>{ try{ if(n.stop) n.stop(); }catch(e){} try{ n.disconnect&&n.disconnect(); }catch(e){} });
+  music.nodes=[];
+  if(music.master){ try{ music.master.disconnect(); }catch(e){} music.master=null; }
+  music.playing=false;
+  document.getElementById("mplay").textContent="▶";
+}
+function noiseBuffer(c){
+  const b=c.createBuffer(1, c.sampleRate*2, c.sampleRate);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  return b;
+}
+function startMusic(){
+  const c=ensureCtx();
+  stopMusic();
+  const master=c.createGain();
+  master.gain.value = (S.music.vol/100)*0.6;
+  master.connect(c.destination);
+  music.master=master;
+  const track=S.music.track;
+
+  if(track==="rain"||track==="waves"){
+    const src=c.createBufferSource(); src.buffer=noiseBuffer(c); src.loop=true;
+    const lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value= track==="rain"?1600:600;
+    const g=c.createGain(); g.gain.value= track==="rain"?0.5:0.7;
+    src.connect(lp); lp.connect(g); g.connect(master); src.start();
+    music.nodes.push(src,lp,g);
+    if(track==="waves"){ // slow swell
+      let up=true;
+      const id=setInterval(()=>{ const t=c.currentTime; g.gain.cancelScheduledValues(t); g.gain.linearRampToValueAtTime(up?0.85:0.35,t+4); up=!up; },4000);
+      music.lfoTimers.push(id);
+    }
+  }
+  else if(track==="forest"){
+    const src=c.createBufferSource(); src.buffer=noiseBuffer(c); src.loop=true;
+    const bp=c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=900; bp.Q.value=0.7;
+    const g=c.createGain(); g.gain.value=0.18;
+    src.connect(bp); bp.connect(g); g.connect(master); src.start();
+    music.nodes.push(src,bp,g);
+    // occasional bird chirps
+    const id=setInterval(()=>{
+      if(Math.random()<0.6){
+        const o=c.createOscillator(), gg=c.createGain();
+        o.type="sine"; const base=1400+Math.random()*900;
+        o.frequency.setValueAtTime(base,c.currentTime);
+        o.frequency.linearRampToValueAtTime(base+300,c.currentTime+0.12);
+        o.connect(gg); gg.connect(master);
+        gg.gain.setValueAtTime(0,c.currentTime); gg.gain.linearRampToValueAtTime(0.12,c.currentTime+0.02); gg.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.25);
+        o.start(); o.stop(c.currentTime+0.3);
+      }
+    },2200);
+    music.lfoTimers.push(id);
+  }
+  else if(track==="lofi"){
+    // soft chord pad: Cmaj7-ish, slow tremolo
+    const freqs=[261.6,329.6,392.0,493.9];
+    freqs.forEach(f=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.type="triangle"; o.frequency.value=f;
+      const lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1200;
+      o.connect(lp); lp.connect(g); g.connect(master);
+      g.gain.value=0.06; o.start(); music.nodes.push(o,g,lp);
+    });
+    // gentle volume LFO
+    let up=true;
+    const id=setInterval(()=>{ const t=c.currentTime; master.gain.cancelScheduledValues(t);
+      const base=(S.music.vol/100)*0.6; master.gain.linearRampToValueAtTime(up?base:base*0.6,t+3); up=!up; },3000);
+    music.lfoTimers.push(id);
+  }
+  else if(track==="drone"){
+    const freqs=[110,164.8,220];
+    freqs.forEach((f,i)=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.type="sine"; o.frequency.value=f;
+      o.connect(g); g.connect(master);
+      g.gain.value= i===0?0.18:0.08; o.start(); music.nodes.push(o,g);
+      // slow detune shimmer
+      const lfo=c.createOscillator(), lg=c.createGain();
+      lfo.frequency.value=0.05+i*0.02; lg.gain.value=1.5;
+      lfo.connect(lg); lg.connect(o.frequency); lfo.start();
+      music.nodes.push(lfo,lg);
+    });
+  }
+  music.playing=true;
+  document.getElementById("mplay").textContent="⏸";
+}
+document.getElementById("mplay").onclick=()=>{ ensureCtx(); music.playing?stopMusic():startMusic(); };
+document.getElementById("trackSel").onchange=(e)=>{ S.music.track=e.target.value; save(); if(music.playing) startMusic(); };
+document.getElementById("vol").oninput=(e)=>{ S.music.vol=+e.target.value; save(); if(music.master) music.master.gain.value=(S.music.vol/100)*0.6; };
+
+/* ============ CUSTOMIZE PANEL ============ */
+function renderCustomize(){
+  renderHUD();
+  const panel=document.getElementById("custPanel");
+  const cats=["color","bg","hat","glasses","pet"];
+  panel.innerHTML = cats.map(cat=>{
+    const items = ITEMS.filter(i=>i.cat===cat);
+    let opts="";
+    if(cat==="hat"||cat==="glasses"||cat==="pet"){
+      opts += `<div class="opt none ${!S.equip[cat]?'eq':''}" data-cat="${cat}" data-id="">None</div>`;
+    }
+    opts += items.map(it=>{
+      const owned=S.owned.includes(it.id);
+      const eq=S.equip[cat]===it.id;
+      let prev = it.emoji;
+      if(cat==="color"){ const col=COLORS[it.id]; prev=`<span style="display:block;width:34px;height:34px;border-radius:8px;background:${col.grad?`linear-gradient(180deg,${col.grad[0]},${col.grad[1]})`:col.fill}"></span>`; }
+      if(cat==="bg"){ const b=BGS[it.id]; prev=`<span style="display:block;width:34px;height:34px;border-radius:8px;background:${b.val}"></span>`; }
+      return `<div class="opt ${eq?'eq':''} ${owned?'':'locked'}" data-cat="${cat}" data-id="${it.id}" title="${it.name}${owned?'':' — locked'}">
+        ${prev}${owned?'':'<span class="lk">🔒</span>'}</div>`;
+    }).join("");
+    return `<h3>${CAT_LABEL[cat]}</h3><div class="opt-grid">${opts}</div>`;
+  }).join("");
+  panel.querySelectorAll(".opt").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const cat=el.dataset.cat, id=el.dataset.id;
+      if(el.classList.contains("locked")){ toast("Buy this in the Shop first 🛍️"); return; }
+      S.equip[cat] = id || null;
+      save(); renderCustomize(); renderHUD();
+    });
+  });
+}
+
+/* ============ SHOP ============ */
+function renderShop(){
+  renderHUD();
+  document.getElementById("shopCoins").textContent = `You have ${S.coins} 🪙`;
+  const grid=document.getElementById("shopGrid");
+  const sorted=[...ITEMS].sort((a,b)=> (a.level-b.level)|| (a.cost-b.cost));
+  grid.innerHTML = sorted.map(it=>{
+    const owned=S.owned.includes(it.id);
+    const unlocked=S.level>=it.level;
+    let prev=it.emoji;
+    if(it.cat==="color"){ const col=COLORS[it.id]; prev=`<span style="display:block;width:48px;height:48px;border-radius:10px;background:${col.grad?`linear-gradient(180deg,${col.grad[0]},${col.grad[1]})`:col.fill}"></span>`; }
+    if(it.cat==="bg"){ const b=BGS[it.id]; prev=`<span style="display:block;width:48px;height:48px;border-radius:10px;background:${b.val}"></span>`; }
+    let btn;
+    if(owned) btn=`<button class="buybtn owned" disabled>✓ Owned</button>`;
+    else if(!unlocked) btn=`<button class="buybtn lockedb" disabled>🔒 Lv ${it.level}</button>`;
+    else btn=`<button class="buybtn buy" data-buy="${it.id}">Buy</button>`;
+    return `<div class="shop-item">
+      ${!unlocked?`<span class="lockbadge">Lv ${it.level}</span>`:""}
+      <div class="shop-prev">${prev}</div>
+      <div class="iname">${it.name}</div>
+      <div class="icat">${CAT_LABEL[it.cat]}</div>
+      ${it.cost>0?`<div class="price">🪙 ${it.cost}</div>`:`<div class="price" style="color:var(--leaf-d)">Free</div>`}
+      ${btn}
+    </div>`;
+  }).join("");
+  grid.querySelectorAll("[data-buy]").forEach(b=>{
+    b.addEventListener("click",()=>buyItem(b.dataset.buy));
+  });
+}
+function buyItem(id){
+  const it=ITEMS.find(i=>i.id===id);
+  if(!it||S.owned.includes(id)) return;
+  if(S.level<it.level){ toast(`Reach level ${it.level} first`); return; }
+  if(S.coins<it.cost){ toast("Not enough coins 🪙"); return; }
+  S.coins-=it.cost;
+  S.owned.push(id);
+  // auto-equip wearables
+  S.equip[it.cat]=id;
+  save(); renderShop(); renderHUD();
+  toast(`Bought ${it.name}! Equipped ✨`);
+}
+
+/* ============ COMMUNITY ============ */
+const MOCK_USERS = [
+  {name:"Maya",tag:"Deep work fan",mins:412,lv:9,cfg:{color:"lav",bg:"aurora",hat:"crown",glasses:"star",pet:"cat"}},
+  {name:"Leo",tag:"Pomodoro streaker",mins:368,lv:8,cfg:{color:"sky",bg:"night",hat:"wizard",glasses:"round",pet:"bird"}},
+  {name:"Aria",tag:"Morning focuser",mins:295,lv:7,cfg:{color:"rose",bg:"sunset",hat:"flower",glasses:null,pet:"bunny"}},
+  {name:"Kai",tag:"52/17 method",mins:240,lv:6,cfg:{color:"coral",bg:"beach",hat:"party",glasses:"sun",pet:null}},
+  {name:"Noor",tag:"Study sessions",mins:188,lv:5,cfg:{color:"butter",bg:"meadow",hat:"beanie",glasses:"round",pet:"cat"}},
+  {name:"Theo",tag:"Weekend warrior",mins:142,lv:4,cfg:{color:"mint",bg:"meadow",hat:"flower",glasses:null,pet:"bunny"}},
+  {name:"Suki",tag:"Just started 🌱",mins:96,lv:3,cfg:{color:"peach",bg:"cream",hat:"beanie",glasses:null,pet:null}},
+  {name:"Ben",tag:"Quick sprints",mins:64,lv:2,cfg:{color:"sky",bg:"cream",hat:null,glasses:"round",pet:null}}
+];
+function weekMinutes(){
+  let sum=0; const now=Date.now();
+  for(let i=0;i<7;i++){ const d=new Date(now-i*86400000).toISOString().slice(0,10); sum+=S.history[d]||0; }
+  return sum;
+}
+function renderCommunity(){
+  renderHUD();
+  const me={name:"You",tag:"Keep blooming 🌿",mins:weekMinutes(),lv:S.level,cfg:S.equip,me:true};
+  const all=[...MOCK_USERS, me].sort((a,b)=>b.mins-a.mins);
+  document.getElementById("leaderboard").innerHTML = all.map((u,i)=>`
+    <div class="lb-row ${u.me?'me':''}">
+      <div class="rank ${i<3?'top':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</div>
+      <div class="lb-av">${renderAvatar(u.cfg)}</div>
+      <div class="lb-name">${u.name}${u.me?' <span style="color:var(--leaf-d)">(you)</span>':''}<small>Lv ${u.lv} · ${u.tag}</small></div>
+      <div class="lb-mins">${u.mins}<small>min this week</small></div>
+    </div>`).join("");
+}
+
+/* ============ STATS ============ */
+function renderStats(){
+  renderHUD();
+  const grid=document.getElementById("statGrid");
+  const hrs=(S.totalMinutes/60);
+  grid.innerHTML=`
+    <div class="stat"><div class="v">${S.level}</div><div class="l">Level</div></div>
+    <div class="stat"><div class="v">${S.totalMinutes}</div><div class="l">Total minutes</div></div>
+    <div class="stat"><div class="v">${S.sessions}</div><div class="l">Sessions</div></div>
+    <div class="stat"><div class="v">🔥 ${S.streak}</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="v">${S.coins}</div><div class="l">Coins</div></div>
+    <div class="stat"><div class="v">${S.owned.length}</div><div class="l">Items owned</div></div>`;
+  // 7-day chart
+  const days=[]; const now=Date.now();
+  for(let i=6;i>=0;i--){ const dt=new Date(now-i*86400000); const key=dt.toISOString().slice(0,10);
+    days.push({label:["Su","Mo","Tu","We","Th","Fr","Sa"][dt.getDay()], min:S.history[key]||0}); }
+  const max=Math.max(30,...days.map(d=>d.min));
+  document.getElementById("chart").innerHTML = days.map(d=>`
+    <div class="bar"><div style="font-size:11px;font-weight:800;color:var(--leaf-d)">${d.min||""}</div>
+    <div class="fill" style="height:${(d.min/max*100)}%"></div><div class="day">${d.label}</div></div>`).join("");
+}
+
+/* ============ TOAST ============ */
+let toastTimer=null;
+function toast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.classList.add("on");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("on"),2600);
+}
+
+/* ============ MODAL ============ */
+document.getElementById("modalClose").onclick=()=>{ document.getElementById("levelModal").classList.remove("on"); renderHUD(); };
+
+/* ============ RESET ============ */
+document.getElementById("resetBtn").onclick=()=>{
+  if(confirm("Reset all progress? This can't be undone.")){
+    S=JSON.parse(JSON.stringify(DEFAULT_STATE)); save();
+    renderHUD(); renderTechniques(); resetTimerDisplay(); renderStats();
+    toast("Progress reset — fresh sprout! 🌱");
+  }
+};
+
+/* ============ INIT ============ */
+document.getElementById("trackSel").value=S.music.track;
+document.getElementById("vol").value=S.music.vol;
+renderTechniques();
+resetTimerDisplay();
+renderHUD();
+
+/* expose minimal hooks for self-test */
+window.__bloom={get S(){return S;}, addXP, awardFocus, buyItem, xpForLevel};
+</script>
+</body>
+</html>
