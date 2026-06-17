@@ -191,6 +191,24 @@
   .toast{position:fixed;bottom:calc(86px + var(--sab));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:14px;font-weight:800;z-index:250;opacity:0;transition:.3s;pointer-events:none;font-size:14px;max-width:90vw;text-align:center}
   .toast.on{opacity:1}
   .reset{background:none;border:none;color:var(--ink-soft);font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px}
+  /* Profiles */
+  .profile-chip{display:flex;align-items:center;gap:6px;background:#f1faf4;border:1px solid #d8efe1;color:var(--leaf-d);
+    border-radius:14px;padding:6px 12px;font-weight:800;font-size:13px;cursor:pointer;max-width:150px}
+  .profile-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .profile-chip:active{transform:scale(.96)}
+  .prow{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:16px;margin-bottom:8px;background:#fff;cursor:pointer}
+  .prow.active{background:#f1faf4;border-color:var(--leaf)}
+  .prow .pav{width:46px;height:46px;border-radius:12px;overflow:hidden;border:1px solid var(--line);flex-shrink:0}
+  .prow .pinfo{flex:1;min-width:0}
+  .prow .pinfo b{font-weight:800}
+  .prow .pinfo small{display:block;color:var(--ink-soft);font-weight:700;font-size:12px}
+  .prow .pcur{color:var(--leaf-d);font-weight:800;font-size:12px;flex-shrink:0}
+  .prow .pdel{background:#fff0ec;color:#d2674e;border:1px solid #f6d3c8;border-radius:10px;padding:8px 10px;font-weight:800;cursor:pointer;flex-shrink:0;font-size:15px}
+  .prow .pdel:active{transform:scale(.92)}
+  .addp{width:100%;border:1px dashed var(--leaf);background:#f1faf4;color:var(--leaf-d);border-radius:14px;padding:12px;font-weight:800;cursor:pointer;margin-top:4px}
+  .addp:active{transform:scale(.98)}
+  .tinput{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px;font-size:16px;font-weight:700;color:var(--ink);margin:12px 0;background:#fff}
+  .tinput:focus{outline:none;border-color:var(--leaf)}
   @media(max-width:560px){
     .time-num{font-size:46px}
     nav.tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
@@ -214,6 +232,7 @@
       <div class="xptext" id="xptext">0 / 100 XP</div>
     </div>
     <div class="coins"><svg class="c" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#f2b441"/><circle cx="10" cy="10" r="6" fill="#ffd571"/><text x="10" y="14" font-size="9" text-anchor="middle" fill="#b07d18" font-weight="bold">$</text></svg><span id="coincount">0</span></div>
+    <button class="profile-chip" id="profileBtn" aria-label="Profiles">👤 <span id="profileName">You</span></button>
   </header>
 
   <div class="install-tip" id="installTip">
@@ -370,15 +389,40 @@
   </div>
 </div>
 
-<!-- Confirm modal (reset) -->
+<!-- Generic confirm modal -->
 <div class="modal" id="confirmModal">
   <div class="modal-card">
     <div style="font-size:40px">🌱</div>
-    <h2>Reset progress?</h2>
-    <p class="msub">This clears your level, coins, items and history. It can't be undone.</p>
+    <h2 id="confirmTitle">Are you sure?</h2>
+    <p class="msub" id="confirmMsg"></p>
     <div style="display:flex;gap:10px;margin-top:18px">
       <button class="btn ghost" id="confirmNo" style="flex:1;justify-content:center">Cancel</button>
-      <button class="btn warn" id="confirmYes" style="flex:1;justify-content:center">Reset</button>
+      <button class="btn warn" id="confirmYes" style="flex:1;justify-content:center">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profiles modal -->
+<div class="modal" id="profilesModal">
+  <div class="modal-card" style="text-align:left">
+    <h2 style="text-align:center">Profiles</h2>
+    <p class="msub" style="text-align:center">Everyone who shares this device gets their own avatar &amp; progress.</p>
+    <div id="profileList"></div>
+    <button class="addp" id="addProfileBtn">＋ Add profile</button>
+    <button class="btn ghost" id="profilesClose" style="width:100%;justify-content:center;margin-top:12px">Close</button>
+  </div>
+</div>
+
+<!-- New profile modal -->
+<div class="modal" id="newProfileModal">
+  <div class="modal-card">
+    <div style="font-size:40px">🌱</div>
+    <h2>New profile</h2>
+    <p class="msub">Give this profile a name.</p>
+    <input class="tinput" id="newProfileName" maxlength="18" placeholder="e.g. Aaron" autocomplete="off">
+    <div style="display:flex;gap:10px">
+      <button class="btn ghost" id="newProfileCancel" style="flex:1;justify-content:center">Cancel</button>
+      <button class="btn primary" id="newProfileCreate" style="flex:1;justify-content:center">Create</button>
     </div>
   </div>
 </div>
@@ -457,15 +501,99 @@ const DEFAULT_STATE = {
   technique:"pomodoro", customFocus:30,
   music:{track:"rain", vol:45}
 };
-let S = load();
-function load(){
+/* Multi-profile storage:
+   DATA = { active:<id>, profiles:{ <id>:{id,name,state} } }
+   S always points at the active profile's state object. */
+const PKEY = "bloom_data";
+function freshState(){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+function uid(){ return "p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function loadData(){
   try{
-    const raw = localStorage.getItem("bloom_state");
-    if(raw){ return Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), JSON.parse(raw)); }
+    const raw = localStorage.getItem(PKEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(d && d.profiles && d.active && d.profiles[d.active]){
+        Object.values(d.profiles).forEach(p=>{ p.state = Object.assign(freshState(), p.state); });
+        return d;
+      }
+    }
+    // migrate legacy single-profile save
+    const old = localStorage.getItem("bloom_state");
+    if(old){ const id=uid(); return {active:id, profiles:{[id]:{id, name:"You", state:Object.assign(freshState(), JSON.parse(old))}}}; }
   }catch(e){}
-  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  const id=uid();
+  return {active:id, profiles:{[id]:{id, name:"You", state:freshState()}}};
 }
-function save(){ try{ localStorage.setItem("bloom_state", JSON.stringify(S)); }catch(e){} }
+let DATA = loadData();
+let S = DATA.profiles[DATA.active].state;
+function save(){ try{ localStorage.setItem(PKEY, JSON.stringify(DATA)); }catch(e){} }
+function activeProfile(){ return DATA.profiles[DATA.active]; }
+
+/* ---- profile management ---- */
+function switchProfile(id){
+  if(timer.running){ toast("End your session before switching"); return; }
+  if(!DATA.profiles[id]) return;
+  DATA.active = id; S = DATA.profiles[id].state; save();
+  refreshAll(); renderProfiles();
+  toast("Switched to "+DATA.profiles[id].name);
+}
+function addProfile(name){
+  if(timer.running){ toast("End your session first"); return; }
+  const ids = Object.keys(DATA.profiles);
+  if(ids.length>=8){ toast("Max 8 profiles on this device"); return; }
+  name = (name||"").trim() || ("Player "+(ids.length+1));
+  const id = uid();
+  DATA.profiles[id] = {id, name, state:freshState()};
+  DATA.active = id; S = DATA.profiles[id].state; save();
+  refreshAll(); renderProfiles();
+  toast("Created "+name+" 🌱");
+}
+function deleteProfile(id){
+  if(timer.running){ toast("End your session first"); return; }
+  const ids = Object.keys(DATA.profiles);
+  if(ids.length<=1){ toast("You need at least one profile"); return; }
+  if(!DATA.profiles[id]) return;
+  const nm = DATA.profiles[id].name;
+  delete DATA.profiles[id];
+  if(DATA.active===id){ DATA.active = Object.keys(DATA.profiles)[0]; S = DATA.profiles[DATA.active].state; }
+  save(); refreshAll(); renderProfiles();
+  toast("Deleted "+nm);
+}
+function refreshAll(){
+  renderHUD(); renderTechniques(); resetTimerDisplay();
+  const pn = document.getElementById("profileName"); if(pn) pn.textContent = activeProfile().name;
+  const active = document.querySelector("nav.tabs button.active");
+  const tab = active ? active.dataset.tab : "focus";
+  if(tab==="avatar") renderCustomize();
+  else if(tab==="shop") renderShop();
+  else if(tab==="community") renderCommunity();
+  else if(tab==="stats") renderStats();
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+function renderProfiles(){
+  const list = document.getElementById("profileList");
+  const ids = Object.keys(DATA.profiles);
+  list.innerHTML = ids.map(id=>{
+    const p = DATA.profiles[id];
+    const isActive = id===DATA.active;
+    return `<div class="prow ${isActive?'active':''}" data-pid="${id}">
+      <div class="pav">${renderAvatar(p.state.equip)}</div>
+      <div class="pinfo"><b>${escapeHtml(p.name)}</b><small>Lv ${p.state.level} · ${p.state.totalMinutes||0} min focused</small></div>
+      ${isActive?'<span class="pcur">Active</span>':''}
+      ${ids.length>1?`<button class="pdel" data-del="${id}" aria-label="Delete profile">🗑</button>`:''}
+    </div>`;
+  }).join("");
+  list.querySelectorAll(".prow").forEach(row=>{
+    row.addEventListener("click",(e)=>{ if(e.target.closest("[data-del]")) return; switchProfile(row.dataset.pid); });
+  });
+  list.querySelectorAll("[data-del]").forEach(b=>{
+    b.addEventListener("click",(e)=>{
+      e.stopPropagation();
+      const id=b.dataset.del, nm=DATA.profiles[id].name;
+      showConfirm("Delete profile?","This permanently erases "+nm+"'s level, coins, items and history.","Delete",()=>deleteProfile(id));
+    });
+  });
+}
 
 /* ============ LEVELING ============ */
 function xpForLevel(lv){ return 100 + (lv-1)*60; }
@@ -989,14 +1117,40 @@ function toast(msg){
 
 /* ============ MODALS ============ */
 document.getElementById("modalClose").onclick=()=>{ document.getElementById("levelModal").classList.remove("on"); renderHUD(); };
-document.getElementById("resetBtn").onclick=()=>document.getElementById("confirmModal").classList.add("on");
-document.getElementById("confirmNo").onclick=()=>document.getElementById("confirmModal").classList.remove("on");
-document.getElementById("confirmYes").onclick=()=>{
-  S=JSON.parse(JSON.stringify(DEFAULT_STATE)); save();
-  document.getElementById("confirmModal").classList.remove("on");
-  renderHUD(); renderTechniques(); resetTimerDisplay(); renderStats();
-  toast("Progress reset — fresh sprout! 🌱");
+
+// generic confirm
+let confirmCb=null;
+function showConfirm(title,msg,yesLabel,cb){
+  document.getElementById("confirmTitle").textContent=title;
+  document.getElementById("confirmMsg").textContent=msg;
+  document.getElementById("confirmYes").textContent=yesLabel||"Confirm";
+  confirmCb=cb;
+  document.getElementById("confirmModal").classList.add("on");
+}
+document.getElementById("confirmNo").onclick=()=>{ document.getElementById("confirmModal").classList.remove("on"); confirmCb=null; };
+document.getElementById("confirmYes").onclick=()=>{ document.getElementById("confirmModal").classList.remove("on"); const cb=confirmCb; confirmCb=null; if(cb) cb(); };
+
+// reset (uses generic confirm)
+document.getElementById("resetBtn").onclick=()=>showConfirm(
+  "Reset progress?","This clears this profile's level, coins, items and history. It can't be undone.","Reset",
+  ()=>{ S=freshState(); DATA.profiles[DATA.active].state=S; save(); refreshAll(); toast("Progress reset — fresh sprout! 🌱"); }
+);
+
+// profiles
+document.getElementById("profileBtn").onclick=()=>{ renderProfiles(); document.getElementById("profilesModal").classList.add("on"); };
+document.getElementById("profilesClose").onclick=()=>document.getElementById("profilesModal").classList.remove("on");
+document.getElementById("addProfileBtn").onclick=()=>{
+  document.getElementById("newProfileName").value="";
+  document.getElementById("newProfileModal").classList.add("on");
+  setTimeout(()=>document.getElementById("newProfileName").focus(),60);
 };
+document.getElementById("newProfileCancel").onclick=()=>document.getElementById("newProfileModal").classList.remove("on");
+document.getElementById("newProfileCreate").onclick=()=>{
+  const v=document.getElementById("newProfileName").value;
+  document.getElementById("newProfileModal").classList.remove("on");
+  addProfile(v);
+};
+document.getElementById("newProfileName").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("newProfileCreate").click(); });
 
 /* ============ INSTALL HINT (iOS) ============ */
 (function(){
@@ -1022,11 +1176,14 @@ if("serviceWorker" in navigator){
 /* ============ INIT ============ */
 document.getElementById("trackSel").value=S.music.track;
 document.getElementById("vol").value=S.music.vol;
+document.getElementById("profileName").textContent=activeProfile().name;
+save(); // persist current (incl. migration from legacy single-profile saves)
 renderTechniques();
 resetTimerDisplay();
 renderHUD();
 
-window.__bloom={get S(){return S;}, addXP, awardFocus, buyItem, xpForLevel};
+window.__bloom={get S(){return S;}, get DATA(){return DATA;}, addXP, awardFocus, buyItem, xpForLevel,
+  addProfile, switchProfile, deleteProfile, activeProfile};
 </script>
 </body>
 </html>
